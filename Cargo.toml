@@ -1,6 +1,6 @@
-[package]
-name = "cicada-engine"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = ["crates/tools/*/*"]
 
-[dependencies]
+[workspace.package]
+edition = "2024"
+rust-version = "1.85.1"
