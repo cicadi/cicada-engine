@@ -1,0 +1,5 @@
+# rust build directories
+/target
+
+# editor files
+/.vscode
