@@ -11,6 +11,7 @@ name = "genvk-macros"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
+ "quote",
 ]
 
 [[package]]
@@ -27,6 +28,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a31971752e70b8b2686d7e46ec17fb38dad4051d94024c88df49b667caea9c84"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "quote"
+version = "1.0.40"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1885c039570dc00dcb4ff087a89e185fd56bae234ddc7f056a945bf36467248d"
+dependencies = [
+ "proc-macro2",
 ]
 
 [[package]]
