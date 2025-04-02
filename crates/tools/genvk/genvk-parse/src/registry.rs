@@ -4,7 +4,7 @@ use xml::{EventReader, attribute::OwnedAttribute, common::Position, reader::XmlE
 
 use crate::{
     FromXml,
-    core::{Api, Depends, Deprecation, FromStr, Len, LimitType, ParseAttr, Queue},
+    core::{Api, Depends, Deprecation, ExternSync, FromStr, Len, LimitType, ParseAttr, Queue},
     error::{Error, ErrorKind},
     macros::FromXml,
     util::Extract,
@@ -333,6 +333,8 @@ pub struct TypeInclude {
 #[vk(tag = "type")]
 pub struct TypeDefine {
     #[vk(optional)]
+    pub name: Option<String>,
+    #[vk(optional)]
     pub api: Option<Vec<Api>>,
     #[vk(optional)]
     pub requires: Option<String>,
@@ -450,8 +452,8 @@ pub struct TypeStruct {
     #[vk(optional)]
     pub comment: Option<String>,
 
-    #[vk(items(Member))]
-    pub members: Vec<Member>,
+    #[vk(items(TypeItem))]
+    pub members: Vec<TypeItem>,
 }
 
 #[derive(Debug, Default, FromXml)]
@@ -472,8 +474,15 @@ pub struct TypeUnion {
     #[vk(optional)]
     pub comment: Option<String>,
 
-    #[vk(items(Member))]
-    pub members: Vec<Member>,
+    #[vk(items(TypeItem))]
+    pub members: Vec<TypeItem>,
+}
+
+#[derive(Debug, FromXml)]
+#[vk(tagged)]
+pub enum TypeItem {
+    Comment(Comment),
+    Member(Member),
 }
 
 #[derive(Debug, Default, FromXml)]
@@ -484,7 +493,7 @@ pub struct Member {
     #[vk(optional)]
     pub optional: Option<Vec<bool>>,
     #[vk(optional, name = "externsync")]
-    pub extern_sync: Option<bool>,
+    pub extern_sync: Option<ExternSync>,
     #[vk(optional, name = "noautovalidity")]
     pub no_auto_validity: Option<bool>,
     #[vk(optional, name = "objecttype")]
@@ -623,8 +632,8 @@ pub struct EnumOffset {
     pub name: String,
     pub extends: String,
 
-    #[vk(name = "extnumber")]
-    pub ext_number: u32,
+    #[vk(optional, name = "extnumber")]
+    pub ext_number: Option<u32>,
     pub offset: u32,
     #[vk(optional)]
     pub dir: Option<Dir>,
@@ -747,7 +756,7 @@ pub struct ExplicitCommand {
     #[vk(optional, name = "videocoding")]
     pub video_coding: Option<VideoCoding>,
     #[vk(optional, name = "cmdbufferlevel")]
-    pub cmd_buffer_level: Option<CommandBufferLevel>,
+    pub cmd_buffer_level: Option<Vec<CommandBufferLevel>>,
 
     #[vk(optional)]
     pub api: Option<Vec<Api>>,
@@ -798,7 +807,7 @@ impl FromStr for RenderPass {
         Ok(match s.as_ref() {
             "inside" => Self::Inside,
             "outside" => Self::Outside,
-            "Both" => Self::Both,
+            "both" => Self::Both,
             _ => return Err(s.into_owned()),
         })
     }
@@ -820,7 +829,7 @@ impl FromStr for VideoCoding {
         Ok(match s.as_ref() {
             "inside" => Self::Inside,
             "outside" => Self::Outside,
-            "Both" => Self::Both,
+            "both" => Self::Both,
             _ => return Err(s.into_owned()),
         })
     }
@@ -867,7 +876,7 @@ pub struct Param {
     #[vk(optional)]
     pub optional: Option<Vec<bool>>,
     #[vk(optional, name = "externsync")]
-    pub extern_sync: Option<bool>,
+    pub extern_sync: Option<ExternSync>,
     #[vk(optional, name = "noautovalidity")]
     pub no_auto_validity: Option<bool>,
     #[vk(optional, name = "objecttype")]
@@ -900,6 +909,7 @@ pub struct ImplicitExternSyncParams {
 #[derive(Debug, Default, FromXml)]
 #[vk(tag = "param")]
 pub struct ImplictExternSyncParam {
+    #[vk(text)]
     pub text: String,
 }
 
@@ -1236,13 +1246,13 @@ impl Extract for NumericFormat {
 impl FromStr for NumericFormat {
     fn from_str(s: Cow<'_, str>) -> Result<Self, String> {
         Ok(match s.as_ref() {
-            "SFIXEDS" => Self::SFixedS,
+            "SFIXED5" => Self::SFixedS,
             "SFLOAT" => Self::SFloat,
             "SINT" => Self::SInt,
             "SNORM" => Self::SNorm,
             "SRGB" => Self::SRgb,
             "SSCALED" => Self::SScaled,
-            "UFlOAT" => Self::UFloat,
+            "UFLOAT" => Self::UFloat,
             "UINT" => Self::UInt,
             "UNORM" => Self::UNorm,
             "USCALED" => Self::UScaled,
@@ -1428,7 +1438,7 @@ pub enum VideoCodecItem {
 }
 
 #[derive(Debug, Default, FromXml)]
-#[vk(tag = "videprofiles")]
+#[vk(tag = "videoprofiles")]
 pub struct VideoProfiles {
     #[vk(name = "struct")]
     pub struct_name: String,
@@ -1440,7 +1450,7 @@ pub struct VideoProfiles {
 }
 
 #[derive(Debug, Default, FromXml)]
-#[vk(tag = "videprofilemember")]
+#[vk(tag = "videoprofilemember")]
 pub struct VideoProfileMember {
     pub name: String,
     #[vk(optional)]
@@ -1476,7 +1486,7 @@ pub struct VideoFormat {
     #[vk(optional)]
     pub usage: Option<String>,
     #[vk(optional)]
-    pub extends: Option<String>,
+    pub extend: Option<String>,
     #[vk(optional)]
     pub comment: Option<String>,
 
@@ -1512,7 +1522,7 @@ pub struct VideoFormatProperties {
 }
 
 #[derive(Debug, Default, FromXml)]
-#[vk(tag = "sprivextensions")]
+#[vk(tag = "spirvextensions")]
 pub struct SpirvExtensions {
     #[vk(optional)]
     pub comment: Option<String>,

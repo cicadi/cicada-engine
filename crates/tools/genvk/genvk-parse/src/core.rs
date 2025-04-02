@@ -286,6 +286,28 @@ impl FromStr for Queue {
     }
 }
 
+#[derive(Debug, Clone, Default)]
+pub enum ExternSync {
+    #[default]
+    False,
+    True,
+    Param(String),
+}
+
+impl Extract for ExternSync {
+    type Output = ExternSync;
+}
+
+impl FromStr for ExternSync {
+    fn from_str(s: Cow<'_, str>) -> Result<Self, String> {
+        Ok(match s.as_ref() {
+            "false" => Self::False,
+            "true" => Self::True,
+            _ => Self::Param(s.into_owned()),
+        })
+    }
+}
+
 #[derive(Debug)]
 pub enum Depends {
     Feature(String),

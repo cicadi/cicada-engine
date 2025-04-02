@@ -97,6 +97,7 @@ impl StructModel {
                     attrs: std::collections::HashMap<String, String>,
                 ) -> Result<Self, crate::error::Error> {
                     let mut out = <Self as Default>::default();
+                    out.parse_attributes(reader, attrs)?;
 
                     loop {
                         match reader.next()? {
@@ -178,9 +179,9 @@ impl StructModel {
             if !attrs.is_empty() {
                 Err(crate::error::Error::new(
                     xml::common::Position::position(reader),
-                    crate::error::ErrorKind::UnexpectedTagEnd {
-                        parent: Self::TAG.to_string(),
+                    crate::error::ErrorKind::ExtraAttrs {
                         tag: Self::TAG.to_owned(),
+                        attrs,
                     },
                 ))
             } else {
