@@ -3,3 +3,6 @@
 
 # editor files
 /.vscode
+
+# auxiliary files
+**/vk.xml
