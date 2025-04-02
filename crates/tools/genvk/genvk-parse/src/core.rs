@@ -2,7 +2,10 @@ use std::{borrow::Cow, collections::HashMap, io::Read};
 
 use xml::{EventReader, common::Position};
 
-use crate::error::{Error, ErrorKind};
+use crate::{
+    error::{Error, ErrorKind},
+    util::Extract,
+};
 
 pub trait FromStr: Sized {
     fn from_str(s: Cow<'_, str>) -> Result<Self, String>;
@@ -10,14 +13,13 @@ pub trait FromStr: Sized {
 
 pub trait ParseAttr {
     type Output;
-    type Err;
 
     fn parse_attr<R: Read>(
         reader: &EventReader<R>,
         tag: &str,
         attr: &str,
         attrs: &mut HashMap<String, String>,
-    ) -> Result<Option<Self::Output>, Self::Err>;
+    ) -> Result<Option<Self::Output>, Error>;
 }
 
 impl<T> ParseAttr for T
@@ -25,7 +27,6 @@ where
     T: FromStr,
 {
     type Output = T;
-    type Err = Error;
 
     fn parse_attr<R: Read>(
         reader: &EventReader<R>,
@@ -51,10 +52,9 @@ where
 
 impl<T> ParseAttr for Vec<T>
 where
-    T: FromStr + ParseAttr<Output = Option<T>>,
+    T: FromStr,
 {
     type Output = Vec<T>;
-    type Err = Error;
 
     fn parse_attr<R: Read>(
         reader: &EventReader<R>,
@@ -108,14 +108,21 @@ impl FromStr for String {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Api {
+    Disabled,
     Vulkan,
     VulkanSc,
+}
+
+impl Extract for Api {
+    type Output = Api;
 }
 
 impl FromStr for Api {
     fn from_str(s: Cow<'_, str>) -> Result<Self, String> {
         Ok(match s.as_ref() {
+            "disabled" => Self::Disabled,
             "vulkan" => Self::Vulkan,
             "vulkansc" => Self::VulkanSc,
             _ => return Err(s.to_string()),
@@ -123,10 +130,15 @@ impl FromStr for Api {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Deprecation {
     True = 1,
     Aliased,
     Ignored,
+}
+
+impl Extract for Deprecation {
+    type Output = Deprecation;
 }
 
 impl FromStr for Deprecation {
@@ -140,6 +152,7 @@ impl FromStr for Deprecation {
     }
 }
 
+#[derive(Debug)]
 pub enum Len {
     Member(String),
     Math { value: String, alt: String },
@@ -147,9 +160,12 @@ pub enum Len {
     Ptr,            // 1
 }
 
+impl Extract for Len {
+    type Output = Len;
+}
+
 impl ParseAttr for Len {
     type Output = Self;
-    type Err = Error;
 
     fn parse_attr<R: Read>(
         reader: &EventReader<R>,
@@ -178,6 +194,33 @@ impl ParseAttr for Len {
     }
 }
 
+impl ParseAttr for Vec<Len> {
+    type Output = Vec<Len>;
+
+    fn parse_attr<R: Read>(
+        reader: &EventReader<R>,
+        tag: &str,
+        attr: &str,
+        attrs: &mut HashMap<String, String>,
+    ) -> Result<Option<Self::Output>, Error> {
+        if attrs.contains_key("altlen") {
+            Ok(Len::parse_attr(reader, tag, attr, attrs)?.map(|len| vec![len]))
+        } else {
+            Ok(attrs.remove(attr).map(|value| {
+                value
+                    .split(',')
+                    .map(|s| match s {
+                        "null-terminated" => Len::NullTerminated,
+                        "1" => Len::Ptr,
+                        _ => Len::Member(s.to_string()),
+                    })
+                    .collect()
+            }))
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LimitType {
     Min,
     Max,
@@ -189,6 +232,10 @@ pub enum LimitType {
     Struct,
     Exact,
     NoAuto,
+}
+
+impl Extract for LimitType {
+    type Output = LimitType;
 }
 
 impl FromStr for LimitType {
@@ -209,6 +256,7 @@ impl FromStr for LimitType {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Queue {
     Compute,
     Decode,
@@ -217,6 +265,10 @@ pub enum Queue {
     Transfer,
     SparseBinding,
     OpticalFlow,
+}
+
+impl Extract for Queue {
+    type Output = Queue;
 }
 
 impl FromStr for Queue {
@@ -240,6 +292,10 @@ pub enum Depends {
     Group(Box<Depends>),
     And(Box<Depends>, Box<Depends>),
     Or(Box<Depends>, Box<Depends>),
+}
+
+impl Extract for Depends {
+    type Output = Depends;
 }
 
 impl FromStr for Depends {
