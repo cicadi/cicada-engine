@@ -5,6 +5,10 @@ version = 4
 [[package]]
 name = "genvk"
 version = "0.1.0"
+dependencies = [
+ "genvk-core",
+ "genvk-parse",
+]
 
 [[package]]
 name = "genvk-core"
