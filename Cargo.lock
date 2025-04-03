@@ -9,6 +9,9 @@ version = "0.1.0"
 [[package]]
 name = "genvk-core"
 version = "0.1.0"
+dependencies = [
+ "genvk-parse",
+]
 
 [[package]]
 name = "genvk-macros"
