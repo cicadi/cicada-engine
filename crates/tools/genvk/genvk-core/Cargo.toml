@@ -6,4 +6,6 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+syn.workspace = true
+
 genvk-parse = { path = "../genvk-parse" }
