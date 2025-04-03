@@ -6,9 +6,10 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-genvk-core = { path = "../genvk-core" }
-
 proc-macro2.workspace = true
 quote.workspace = true
 syn.workspace = true
+
 prettyplease = "0.2.31"
+
+genvk-core = { path = "../genvk-core" }

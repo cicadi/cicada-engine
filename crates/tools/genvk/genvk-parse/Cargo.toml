@@ -6,6 +6,6 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-genvk-macros = { path = "../genvk-macros" }
-
 xml = "0.8.20"
+
+genvk-macros = { path = "../genvk-macros" }
