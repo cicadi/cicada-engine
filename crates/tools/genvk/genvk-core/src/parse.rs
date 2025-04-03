@@ -1,1 +1,1 @@
-pub use genvk_parse::{registry::*, *};
+pub use genvk_parse::{error::*, registry::*, *};
