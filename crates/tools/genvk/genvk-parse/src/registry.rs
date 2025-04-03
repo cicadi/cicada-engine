@@ -4,10 +4,10 @@ use xml::{EventReader, attribute::OwnedAttribute, common::Position, reader::XmlE
 
 use crate::{
     FromXml,
-    core::{Api, Depends, Deprecation, ExternSync, FromStr, Len, LimitType, ParseAttr, Queue},
     error::{Error, ErrorKind},
     macros::FromXml,
     util::Extract,
+    util::{Api, Depends, Deprecation, ExternSync, FromStr, Len, LimitType, ParseAttr, Queue},
 };
 
 pub(crate) trait VecAttributesExt {

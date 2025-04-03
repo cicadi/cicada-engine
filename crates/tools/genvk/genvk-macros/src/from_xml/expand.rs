@@ -168,7 +168,7 @@ impl StructModel {
 
             body.extend(quote!(
                 self.#name =
-                    <<#ty as crate::util::Extract>::Output as crate::core::ParseAttr>::parse_attr(
+                    <<#ty as crate::util::Extract>::Output as crate::util::ParseAttr>::parse_attr(
                         reader, Self::TAG, #attr_name, &mut attrs
                     )?#option_unwrap;
             ));
