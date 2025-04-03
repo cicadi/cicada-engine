@@ -11,3 +11,4 @@ genvk-core = { path = "../genvk-core" }
 proc-macro2.workspace = true
 quote.workspace = true
 syn.workspace = true
+prettyplease = "0.2.31"
