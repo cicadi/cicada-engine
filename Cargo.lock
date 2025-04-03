@@ -29,6 +29,9 @@ dependencies = [
 [[package]]
 name = "genvk-output"
 version = "0.1.0"
+dependencies = [
+ "genvk-core",
+]
 
 [[package]]
 name = "genvk-parse"
