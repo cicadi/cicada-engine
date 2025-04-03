@@ -32,6 +32,9 @@ name = "genvk-output"
 version = "0.1.0"
 dependencies = [
  "genvk-core",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
