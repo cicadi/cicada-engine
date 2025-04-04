@@ -9,7 +9,7 @@ use genvk::{
 fn main() -> Result<(), Error> {
     let registry = parse_xml_source(File::open("vk.xml")?)?;
     for api in [Api::Vulkan, Api::VulkanSc] {
-        generate_binding(Vulkan::new(api, &registry)?)?;
+        generate_binding(Vulkan::new(api).process(&registry)?)?;
     }
 
     Ok(())

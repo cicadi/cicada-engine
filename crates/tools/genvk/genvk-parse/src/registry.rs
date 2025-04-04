@@ -296,6 +296,41 @@ pub enum ExplicitType {
     Misc(TypeMisc),
 }
 
+impl ExplicitType {
+    pub fn requires(&self) -> Option<&str> {
+        match self {
+            ExplicitType::Include(ty) => ty.requires.as_ref(),
+            ExplicitType::Define(ty) => ty.requires.as_ref(),
+            ExplicitType::Base(ty) => ty.requires.as_ref(),
+            ExplicitType::Handle(ty) => ty.requires.as_ref(),
+            ExplicitType::Bitmask(ty) => ty.requires.as_ref(),
+            ExplicitType::FnPtr(ty) => ty.requires.as_ref(),
+            ExplicitType::Struct(ty) => ty.requires.as_ref(),
+            ExplicitType::Union(ty) => ty.requires.as_ref(),
+            ExplicitType::Misc(ty) => ty.requires.as_ref(),
+
+            ExplicitType::Enum(_) => None,
+        }
+        .map(String::as_str)
+    }
+
+    pub fn api(&self) -> Option<&[Api]> {
+        match self {
+            ExplicitType::Include(ty) => ty.api.as_ref(),
+            ExplicitType::Define(ty) => ty.api.as_ref(),
+            ExplicitType::Base(ty) => ty.api.as_ref(),
+            ExplicitType::Handle(ty) => ty.api.as_ref(),
+            ExplicitType::Enum(ty) => ty.api.as_ref(),
+            ExplicitType::Bitmask(ty) => ty.api.as_ref(),
+            ExplicitType::FnPtr(ty) => ty.api.as_ref(),
+            ExplicitType::Struct(ty) => ty.api.as_ref(),
+            ExplicitType::Union(ty) => ty.api.as_ref(),
+            ExplicitType::Misc(ty) => ty.api.as_ref(),
+        }
+        .map(Vec::as_slice)
+    }
+}
+
 #[derive(Debug, Default, FromXml)]
 #[vk(tag = "type")]
 pub struct TypeMisc {

@@ -1,9 +1,9 @@
+pub mod enums;
 pub mod error;
 pub mod parse;
+pub mod types;
 
-use std::collections::HashMap;
-
-use self::error::Error;
+use self::{error::Error, types::Types};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Api {
@@ -12,124 +12,111 @@ pub enum Api {
 }
 
 impl Api {
-    pub fn is_compatible(&self, api: &Option<Vec<parse::util::Api>>) -> bool {
+    pub fn is_compatible_with<T: AsRef<[parse::Api]>>(&self, api: &Option<T>) -> bool {
         api.as_ref().is_none_or(|apis| {
-            apis.iter().any(|rhs| match (self, rhs) {
-                (Api::Vulkan, genvk_parse::util::Api::Vulkan)
-                | (Api::VulkanSc, genvk_parse::util::Api::VulkanSc) => true,
+            apis.as_ref().iter().any(|rhs| match (self, rhs) {
+                (Api::Vulkan, parse::Api::Vulkan) | (Api::VulkanSc, parse::Api::VulkanSc) => true,
                 _ => false,
             })
         })
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+pub enum Deprecation {
+    #[default]
+    False,
+    True,
+    Aliased,
+    Ignored,
+}
+
+impl From<Option<parse::Deprecation>> for Deprecation {
+    fn from(value: Option<parse::Deprecation>) -> Self {
+        match value {
+            None => Self::False,
+            Some(parse::Deprecation::True) => Self::True,
+            Some(parse::Deprecation::Ignored) => Self::Ignored,
+            Some(parse::Deprecation::Aliased) => Self::Aliased,
+        }
+    }
+}
+
 pub struct Vulkan {
     pub api: Api,
     pub types: Types,
-    pub enums: Enums,
 }
 
 impl Vulkan {
-    pub fn new(api: Api, registry: &parse::Registry) -> Result<Self, Error> {
-        Ok(Self {
-            types: Types::new(api, &registry)?,
-            enums: Enums::new(api, &registry)?,
+    pub fn new(api: Api) -> Self {
+        Self {
             api,
-        })
-    }
-}
-
-pub struct Types {
-    pub items: HashMap<String, Type>,
-}
-
-impl Types {
-    pub fn new(api: Api, registry: &parse::Registry) -> Result<Self, Error> {
-        let items = Self::create_types_map(api, registry)?;
-        Ok(Self { items })
+            types: Default::default(),
+        }
     }
 
-    fn create_types_map(
-        api: Api,
-        registry: &parse::Registry,
-    ) -> Result<HashMap<String, Type>, Error> {
-        let mut out = HashMap::new();
-        for types in registry.items.iter().filter_map(|item| match item {
-            parse::RegistryItem::Types(types) => Some(types),
-            _ => None,
-        }) {
-            Self::process_registry_types(api, types, &mut out)?;
+    pub fn process(mut self, registry: &parse::Registry) -> Result<Self, Error> {
+        let mut ctxt = Ctxt::new(self.api);
+        loop {
+            self.populate_with_ctxt(&mut ctxt, registry)?;
+            if !ctxt.loop_needed {
+                break;
+            } else if !ctxt.is_updated {
+                return Err(Error::PopulateLoop);
+            } else {
+                ctxt.reset();
+            }
         }
 
-        Ok(out)
+        Ok(self)
     }
 
-    fn process_registry_types(
-        api: Api,
-        types: &parse::Types,
-        out: &mut HashMap<String, Type>,
+    fn populate_with_ctxt(
+        &mut self,
+        ctxt: &mut Ctxt,
+        registry: &parse::Registry,
     ) -> Result<(), Error> {
-        for item in types.items.iter().filter_map(|item| match item {
-            parse::TypesItem::Type(item) => Some(item),
-            parse::TypesItem::Comment(_) => None,
-        }) {
-            Self::process_registry_type(api, item, out)?;
+        use parse::RegistryItem::*;
+
+        println!("started population loop #{}", ctxt.loops_count);
+        for item in registry.items.iter() {
+            match item {
+                Comment(_) => {}
+
+                Types(types) => self.types.process_types(ctxt, types)?,
+                _ => {}
+            }
         }
 
         Ok(())
     }
+}
 
-    fn process_registry_type(
-        api: Api,
-        ty: &parse::Type,
-        out: &mut HashMap<String, Type>,
-    ) -> Result<(), Error> {
-        Ok(match ty {
-            parse::Type::Alias(_) => {}
-            parse::Type::Explicit(ty) => match ty {
-                parse::ExplicitType::Enum(ty) => {
-                    if api.is_compatible(&ty.api) {
-                        let output = OutputTypeEnum {
-                            name: ty.name.clone(),
-                        };
-                        out.insert(
-                            ty.name.clone(),
-                            Type {
-                                name: ty.name.clone(),
-                                output: OutputType::Enum(output),
-                            },
-                        );
-                    }
-                }
-                _ => {}
-            },
-        })
+pub(crate) struct Ctxt {
+    pub api: Api,
+
+    pub loop_needed: bool,
+    pub is_updated: bool,
+
+    pub loops_count: u32,
+}
+
+impl Ctxt {
+    pub(crate) fn new(api: Api) -> Self {
+        Self {
+            api,
+
+            loop_needed: false,
+            is_updated: false,
+
+            loops_count: 0,
+        }
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.loop_needed = false;
+        self.is_updated = false;
+
+        self.loops_count += 1;
     }
 }
-
-pub struct Type {
-    pub name: String,
-    pub output: OutputType,
-}
-
-pub enum OutputType {
-    Enum(OutputTypeEnum),
-}
-
-pub struct OutputTypeEnum {
-    pub name: String,
-}
-
-pub struct Enums {
-    pub items: HashMap<String, EnumBlocks>,
-}
-
-impl Enums {
-    pub fn new(_api: Api, _registry: &parse::Registry) -> Result<Self, Error> {
-        Ok(Self {
-            items: HashMap::new(),
-        })
-    }
-}
-
-pub struct EnumBlocks {}
